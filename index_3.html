@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Moore Growth Fund | Investment Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1116; --panel:#161B22; --panel-2:#1B222B; --line:#232A33;
+    --txt:#E6EDF3; --muted:#8B98A5; --faint:#5B6673;
+    --gain:#3FB68B; --loss:#E5534B; --gold:#E0A82E;
+    --tech:#E0A82E; --comm:#5B8DEF; --disc:#9B7BE0; --fin:#3FB68B; --cash:#3A4654;
+    --r:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(1200px 500px at 12% -10%, rgba(224,168,46,.06), transparent 60%),
+      radial-gradient(1000px 600px at 100% 0%, rgba(91,141,239,.05), transparent 55%),
+      var(--ink);
+    color:var(--txt); font-family:"Space Grotesk",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; line-height:1.45; min-height:100vh;
+  }
+  .wrap{max-width:1240px; margin:0 auto; padding:26px 20px 48px}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums}
+  .pos{color:var(--gain)} .neg{color:var(--loss)} .flat{color:var(--muted)}
+
+  .eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-bottom:14px}
+  .top{display:flex; flex-wrap:wrap; align-items:center; gap:12px 16px}
+  .mark{display:flex; align-items:center; gap:13px; margin-right:auto}
+  .glyph{width:38px;height:38px;border-radius:10px;
+    background:linear-gradient(140deg,var(--gold),#b5781a);
+    display:grid;place-items:center;color:#1a1206;font-weight:700;font-size:21px}
+  h1{font-size:22px; margin:0; letter-spacing:.2px; font-weight:600}
+  .sub{color:var(--muted); font-size:12.5px; margin-top:1px}
+  .pill{display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line);
+    background:var(--panel); border-radius:999px; padding:7px 13px; font-size:12.5px; color:var(--muted)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+  .dot.live{background:var(--gain); box-shadow:0 0 0 3px rgba(63,182,139,.18)}
+  .dot.warn{background:var(--gold); box-shadow:0 0 0 3px rgba(224,168,46,.16)}
+  .dot.bad{background:var(--loss); box-shadow:0 0 0 3px rgba(229,83,75,.16)}
+  button{font-family:inherit}
+  .btn{border:1px solid var(--line); background:var(--panel-2); color:var(--txt);
+    border-radius:9px; padding:8px 13px; font-size:13px; cursor:pointer}
+  .btn:hover{border-color:#3a4452}
+  .updated{color:var(--faint); font-size:12px; margin:9px 2px 18px}
+
+  .keybar{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin:0 0 18px}
+  .keybar input{flex:1;min-width:220px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
+    border-radius:9px;padding:8px 11px;font-family:"IBM Plex Mono",monospace;font-size:12.5px}
+  .keybar .hint{color:var(--faint);font-size:12px}
+  a{color:var(--gold)}
+
+  .thesis{border:1px solid var(--line); background:linear-gradient(180deg,var(--panel),#13181f);
+    border-radius:var(--r); padding:15px 18px; margin-bottom:20px; position:relative; overflow:hidden}
+  .thesis:before{content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:linear-gradient(var(--gold),#8a5e15)}
+  .thesis .ey{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); font-weight:600}
+  .thesis p{margin:6px 0 0; color:#C7D0DA; font-size:13.5px; max-width:92ch}
+
+  .kpis{display:grid; grid-template-columns:repeat(5,1fr); gap:13px; margin-bottom:20px}
+  .kpi{border:1px solid var(--line); background:var(--panel); border-radius:var(--r); padding:14px 15px}
+  .kpi .lab{font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+  .kpi .val{font-size:22px; margin-top:7px; font-weight:500}
+  .kpi .meta{font-size:12px; margin-top:3px; color:var(--muted)}
+
+  .card{border:1px solid var(--line); background:var(--panel); border-radius:var(--r); overflow:hidden; margin-bottom:18px}
+  .card h2{font-size:12.5px; letter-spacing:.05em; margin:0; padding:14px 18px; border-bottom:1px solid var(--line);
+    color:var(--muted); font-weight:600; text-transform:uppercase; display:flex; align-items:center; gap:10px}
+  .src{margin-left:auto;color:var(--faint);font-size:11px;letter-spacing:.04em;text-transform:none}
+
+  .scroll{overflow-x:auto}
+  table{width:100%; border-collapse:collapse; font-size:13px; min-width:860px}
+  th,td{padding:10px 11px; text-align:right; white-space:nowrap}
+  th:first-child,td:first-child,th:nth-child(2),td:nth-child(2),th:nth-child(3),td:nth-child(3){text-align:left}
+  thead th{font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--faint); font-weight:600;
+    border-bottom:1px solid var(--line); cursor:pointer; user-select:none}
+  thead th:hover{color:var(--muted)}
+  th .ar{opacity:.4; font-size:9px; margin-left:3px}
+  th.sorted .ar{opacity:1; color:var(--gold)}
+  tbody tr{border-bottom:1px solid #1c232c}
+  tbody tr:last-child{border-bottom:0}
+  tbody tr:hover{background:#171d25}
+  .tk{font-weight:600}
+  .sec-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px;vertical-align:middle}
+  td.px{transition:color .25s}
+  td.px.flash{color:var(--gold)}
+  tfoot td{padding:11px; border-top:1px solid var(--line); font-weight:600}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+  @media (max-width:900px){.cols{grid-template-columns:1fr}}
+
+  /* mandate compliance */
+  .chk{padding:8px 18px 16px}
+  .chkrow{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid #1c232c;font-size:13px}
+  .chkrow:last-child{border-bottom:0}
+  .badge{width:20px;height:20px;border-radius:6px;flex:none;display:grid;place-items:center;font-size:12px;font-weight:700}
+  .ok{background:rgba(63,182,139,.16);color:var(--gain)}
+  .no{background:rgba(229,83,75,.16);color:var(--loss)}
+  .chkrow .lab{color:#C7D0DA}
+  .chkrow .v{margin-left:auto;color:var(--muted)}
+  .chkrow .v b{color:var(--txt);font-weight:600}
+
+  /* sector bars */
+  .secbars{padding:10px 18px 18px}
+  .secbar{margin-top:12px}
+  .secbar .hd{display:flex;font-size:12px;color:var(--muted);margin-bottom:5px}
+  .secbar .hd .pc{margin-left:auto;color:var(--txt)}
+  .track{height:8px;border-radius:6px;background:#10151b;overflow:hidden}
+  .fill{height:100%;border-radius:6px}
+
+  .note{color:var(--faint);font-size:11.5px;padding:0 18px 16px;line-height:1.6}
+  footer{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);color:var(--faint);font-size:12px;line-height:1.7}
+  footer b{color:var(--muted);font-weight:600}
+
+  @media (max-width:680px){ .kpis{grid-template-columns:repeat(2,1fr)} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">AFM 241 · Assignment 2 · University of Waterloo, School of Accounting &amp; Finance</div>
+
+  <div class="top">
+    <div class="mark">
+      <div class="glyph">M</div>
+      <div>
+        <h1>Moore Growth Fund</h1>
+        <div class="sub">Secular Digitization · AI Compute · High-Conviction Growth</div>
+      </div>
+    </div>
+    <span class="pill"><span id="statusDot" class="dot"></span><span id="statusText">Initializing…</span></span>
+    <button id="refreshBtn" class="btn">↻ Refresh prices</button>
+  </div>
+  <div class="updated" id="updated">—</div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="lab">Net worth</div><div class="val mono" id="kpiNet">—</div><div class="meta">Live value + cash</div></div>
+    <div class="kpi"><div class="lab">Total return</div><div class="val mono" id="kpiRet">—</div><div class="meta" id="kpiRetPct">—</div></div>
+    <div class="kpi"><div class="lab">Invested capital</div><div class="val mono" id="kpiCost">—</div><div class="meta">8 holdings · 4 sectors</div></div>
+    <div class="kpi"><div class="lab">Cash position</div><div class="val mono" id="kpiCash">—</div><div class="meta" id="kpiCashPct">—</div></div>
+    <div class="kpi"><div class="lab">Fund inception</div><div class="val mono" style="font-size:18px">Jun 26, 2026</div><div class="meta">Initial: $1,000,000</div></div>
+  </div>
+
+  <div class="thesis">
+    <div class="ey">Investment thesis — fund mandate</div>
+    <p>Higher-for-longer rates pressure growth equities in waves, but the fund treats rotation as opportunity, not retreat. It concentrates in dominant, cash-generative leaders in AI compute, cloud, digital advertising, e-commerce and digital payments — businesses whose demand is driven by secular digitization rather than the rate cycle. Diversification across sectors that share one economic engine; conviction held through the volatility. No single position exceeds 20%; commodity-, leverage- and yield-driven names are excluded.</p>
+  </div>
+
+  <div class="card">
+    <h2>Portfolio holdings <span class="src" id="srcLabel">Cost basis: Jun 26, 2026 close · Source: —</span></h2>
+    <div class="scroll">
+      <table>
+        <thead><tr id="thead"></tr></thead>
+        <tbody id="rows"></tbody>
+        <tfoot><tr id="foot"></tr></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div class="card" style="margin-bottom:0">
+      <h2>Mandate compliance</h2>
+      <div class="chk" id="chk"></div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:0">
+        <h2>Sector allocation <span class="src">by market value</span></h2>
+        <div class="secbars" id="secbars"></div>
+        <div class="note">
+          Current price defaults to the Jun 26 cost basis until live quotes load (return reads 0.00%).
+          On weekends a live quote returns Friday's close, which equals your cost basis.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <b>Moore Growth Fund</b> · AFM 241 Assignment 2 · University of Waterloo<br>
+    <!-- EDIT: put your name below -->
+    Fund Manager: <b>[your name]</b> · Inception: June 26, 2026 · Initial capital: $1,000,000 USD<br>
+    Live market data: <a href="https://twelvedata.com">Twelve Data</a> · Research: <a href="https://bigdata.com">Bigdata.com</a> · For academic use only — not investment advice.
+  </footer>
+
+</div>
+
+<script>
+/* ============================================================
+   Moore Growth Fund dashboard
+   Live prices: Twelve Data /quote (batched, 1 credit/symbol).
+   Free tier = 8 credits/min, 800/day → one 8-symbol call per 60s.
+   VERIFY /quote response fields (close, fifty_two_week) against
+   current Twelve Data docs if data doesn't populate.
+   No API key lives in this file. The browser calls our own
+   serverless function at /.netlify/functions/quote, which holds
+   the real Twelve Data key as a private server-side environment
+   variable (set in Netlify: Site configuration -> Environment
+   variables -> TD_KEY). The key is never sent to, or visible in,
+   the visitor's browser.
+   ============================================================ */
+const CONFIG = { REFRESH_MS:60000 };
+
+const INITIAL_CAPITAL = 1000000;
+const CASH = 47598.04;
+
+const PORTFOLIO = [
+  { ticker:"MSFT",  name:"Microsoft Corp.",  sector:"Technology",             shares:483, cost:372.97 },
+  { ticker:"NVDA",  name:"NVIDIA Corp.",     sector:"Technology",             shares:781, cost:192.53 },
+  { ticker:"GOOGL", name:"Alphabet Inc.",    sector:"Communication Services", shares:445, cost:337.39 },
+  { ticker:"META",  name:"Meta Platforms",   sector:"Communication Services", shares:219, cost:550.25 },
+  { ticker:"AMZN",  name:"Amazon.com Inc.",  sector:"Consumer Discretionary", shares:431, cost:232.69 },
+  { ticker:"V",     name:"Visa Inc.",        sector:"Financials",             shares:299, cost:336.23 },
+  { ticker:"MA",    name:"Mastercard Inc.",  sector:"Financials",             shares:161, cost:499.02 },
+  { ticker:"AVGO",  name:"Broadcom Inc.",    sector:"Technology",             shares:192, cost:365.02 },
+];
+PORTFOLIO.forEach(p => { p.price = p.cost; p.wkLow=null; p.wkHigh=null; });
+
+const EXCLUDED = ["Energy","Materials","Utilities","Real Estate"];
+const UNIVERSE = ["MSFT","NVDA","GOOGL","META","AMZN","V","MA","AVGO"]; // all confirmed present in universe.csv
+const HEX = { "Technology":"#E0A82E","Communication Services":"#5B8DEF","Consumer Discretionary":"#9B7BE0","Financials":"#3FB68B","Cash":"#3A4654" };
+
+const usd  = n => n.toLocaleString("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2,maximumFractionDigits:2});
+const usd0 = n => n.toLocaleString("en-US",{style:"currency",currency:"USD",minimumFractionDigits:0,maximumFractionDigits:0});
+const pctS = n => (n>=0?"+":"\u2212") + Math.abs(n).toFixed(2) + "%";
+const usdS = n => (n>=0?"+":"\u2212") + usd(Math.abs(n));
+const cls  = n => n>0.0001 ? "pos" : (n<-0.0001 ? "neg" : "flat");
+
+/* ---------- compute ---------- */
+function compute(){
+  let mv=0, cost=0;
+  PORTFOLIO.forEach(p=>{ p.mv=p.shares*p.price; p.cv=p.shares*p.cost; p.g=p.mv-p.cv; p.gp=p.cv?p.g/p.cv*100:0; mv+=p.mv; cost+=p.cv; });
+  const net=mv+CASH; const ret=net-INITIAL_CAPITAL;
+  PORTFOLIO.forEach(p=>{ p.weight=p.mv/net*100; });
+  return { mv, cost, net, ret, retPct:ret/INITIAL_CAPITAL*100 };
+}
+
+/* ---------- sortable table ---------- */
+const COLS = [
+  {k:"ticker", lab:"Ticker",   t:"s"},
+  {k:"name",   lab:"Company",  t:"s"},
+  {k:"sector", lab:"Sector",   t:"s"},
+  {k:"shares", lab:"Shares",   t:"n"},
+  {k:"cost",   lab:"Cost",     t:"n"},
+  {k:"price",  lab:"Price",    t:"n"},
+  {k:"range",  lab:"52-wk range", t:"x"},
+  {k:"mv",     lab:"Value",    t:"n"},
+  {k:"weight", lab:"Weight",   t:"n"},
+  {k:"g",      lab:"Gain $",   t:"n"},
+  {k:"gp",     lab:"Gain %",   t:"n"},
+];
+let sortKey="mv", sortDir=-1;
+
+function renderHead(){
+  document.getElementById("thead").innerHTML = COLS.map(c=>{
+    const ar = sortKey===c.k ? (sortDir<0?"▼":"▲") : "↕";
+    return `<th data-k="${c.k}" class="${sortKey===c.k?'sorted':''}">${c.lab}<span class="ar">${ar}</span></th>`;
+  }).join("");
+  document.querySelectorAll("th[data-k]").forEach(th=>{
+    th.addEventListener("click",()=>{
+      const k=th.dataset.k;
+      if(sortKey===k) sortDir*=-1; else { sortKey=k; sortDir = (COLS.find(c=>c.k===k).t==="s")?1:-1; }
+      render();
+    });
+  });
+}
+
+function rangeStr(p){ return (p.wkLow!=null && p.wkHigh!=null) ? `${usd(p.wkLow)} – ${usd(p.wkHigh)}` : "—"; }
+
+function renderRows(){
+  const rows=[...PORTFOLIO].sort((a,b)=>{
+    let x=a[sortKey], y=b[sortKey];
+    if(typeof x==="string") return x.localeCompare(y)*sortDir;
+    return ((x??0)-(y??0))*sortDir;
+  });
+  document.getElementById("rows").innerHTML = rows.map(p=>`
+    <tr>
+      <td><span class="sec-dot" style="background:${HEX[p.sector]}"></span><span class="tk">${p.ticker}</span></td>
+      <td style="color:var(--muted)">${p.name}</td>
+      <td style="color:var(--muted)">${p.sector}</td>
+      <td class="mono">${p.shares}</td>
+      <td class="mono">${usd(p.cost)}</td>
+      <td class="mono px" data-px="${p.ticker}">${usd(p.price)}</td>
+      <td class="mono" style="color:var(--muted)">${rangeStr(p)}</td>
+      <td class="mono">${usd(p.mv)}</td>
+      <td class="mono">${p.weight.toFixed(1)}%</td>
+      <td class="mono ${cls(p.g)}">${usdS(p.g)}</td>
+      <td class="mono ${cls(p.gp)}">${pctS(p.gp)}</td>
+    </tr>`).join("");
+}
+
+function renderFoot(t){
+  document.getElementById("foot").innerHTML = `
+    <td>Total</td><td></td><td></td><td></td>
+    <td class="mono">${usd0(t.cost)}</td><td></td><td></td>
+    <td class="mono">${usd(t.mv)}</td>
+    <td class="mono">${(t.mv/t.net*100).toFixed(1)}%</td>
+    <td class="mono ${cls(t.ret)}">${usdS(t.ret)}</td>
+    <td class="mono ${cls(t.ret)}">${pctS(t.retPct)}</td>`;
+}
+
+function renderKpis(t){
+  document.getElementById("kpiNet").textContent=usd(t.net);
+  const r=document.getElementById("kpiRet"); r.textContent=usdS(t.ret); r.className="val mono "+cls(t.ret);
+  const rp=document.getElementById("kpiRetPct"); rp.textContent=pctS(t.retPct); rp.className="meta "+cls(t.ret);
+  document.getElementById("kpiCost").textContent=usd0(t.cost);
+  document.getElementById("kpiCash").textContent=usd(CASH);
+  document.getElementById("kpiCashPct").textContent=(CASH/INITIAL_CAPITAL*100).toFixed(2)+"% of fund";
+}
+
+/* ---------- mandate compliance ---------- */
+function renderCompliance(t){
+  // weights by COST basis (the purchase decision) for stable position-cap check
+  let maxName="",maxW=0; PORTFOLIO.forEach(p=>{ const w=p.cv/INITIAL_CAPITAL*100; if(w>maxW){maxW=w;maxName=p.ticker;} });
+  const secs={}; PORTFOLIO.forEach(p=>{ secs[p.sector]=(secs[p.sector]||0)+p.cv; });
+  const nSectors=Object.keys(secs).length;
+  const cashPct=CASH/INITIAL_CAPITAL*100;
+  const allInUniverse=PORTFOLIO.every(p=>UNIVERSE.includes(p.ticker));
+  const noExcluded=PORTFOLIO.every(p=>!EXCLUDED.includes(p.sector));
+  const maxSecW=Math.max(...Object.values(secs))/INITIAL_CAPITAL*100;
+
+  const checks=[
+    {ok:PORTFOLIO.length>=5, lab:"At least 5 holdings (assignment)", v:`<b>${PORTFOLIO.length}</b> holdings`},
+    {ok:PORTFOLIO.length>=8&&PORTFOLIO.length<=10, lab:"8–10 holdings (mandate)", v:`<b>${PORTFOLIO.length}</b>`},
+    {ok:nSectors>=3, lab:"At least 3 sectors", v:`<b>${nSectors}</b> sectors`},
+    {ok:maxW<=20, lab:"Max single position ≤ 20%", v:`${maxName} <b>${maxW.toFixed(1)}%</b>`},
+    {ok:cashPct<=5, lab:"Cash ≤ 5% (mandate)", v:`<b>${cashPct.toFixed(2)}%</b>`},
+    {ok:maxSecW<=60, lab:"No sector materially > ~60%", v:`max <b>${maxSecW.toFixed(1)}%</b>`},
+    {ok:noExcluded, lab:"Excluded sectors avoided", v:`Energy/Materials/Utilities/RE`},
+    {ok:allInUniverse, lab:"All holdings from universe.csv", v:`<b>${PORTFOLIO.length}/${PORTFOLIO.length}</b>`},
+  ];
+  document.getElementById("chk").innerHTML = checks.map(c=>`
+    <div class="chkrow">
+      <span class="badge ${c.ok?'ok':'no'}">${c.ok?'✓':'✕'}</span>
+      <span class="lab">${c.lab}</span><span class="v">${c.v}</span>
+    </div>`).join("");
+}
+
+/* ---------- sector bars ---------- */
+function renderSectors(t){
+  const secs={}; PORTFOLIO.forEach(p=>{ secs[p.sector]=(secs[p.sector]||0)+p.mv; }); secs["Cash"]=CASH;
+  const order=["Technology","Communication Services","Financials","Consumer Discretionary","Cash"];
+  document.getElementById("secbars").innerHTML = order.filter(s=>secs[s]).map(s=>{
+    const pc=secs[s]/t.net*100;
+    return `<div class="secbar"><div class="hd"><span><span class="sec-dot" style="background:${HEX[s]}"></span>${s}</span><span class="pc">${pc.toFixed(1)}%</span></div>
+      <div class="track"><div class="fill" style="width:${pc}%;background:${HEX[s]}"></div></div></div>`;
+  }).join("");
+}
+
+function render(){
+  const t=compute();
+  renderHead(); renderRows(); renderFoot(t); renderKpis(t); renderCompliance(t); renderSectors(t);
+}
+
+/* ---------- live data (via our own serverless proxy, key hidden server-side) ---------- */
+async function fetchQuotes(){
+  const symbols=PORTFOLIO.map(p=>p.ticker).join(",");
+  const url=`/.netlify/functions/quote?symbols=${encodeURIComponent(symbols)}`;
+  const r=await fetch(url);
+  if(r.status===429) throw {kind:"rate"};
+  if(!r.ok) throw {kind:"http",status:r.status};
+  const data=await r.json();
+  if(data && data.status==="error") throw {kind:"api",message:data.message||"API error"};
+  let got=0;
+  PORTFOLIO.forEach(p=>{
+    let d=data[p.ticker];
+    if(d===undefined && PORTFOLIO.length===1) d=data;
+    if(!d || d.status==="error") return;
+    const v=parseFloat(d.close!==undefined?d.close:d.price);
+    if(isFinite(v)&&v>0){ p.price=v; got++; }
+    const w=d.fifty_two_week||{};
+    const lo=parseFloat(w.low), hi=parseFloat(w.high);
+    if(isFinite(lo)) p.wkLow=lo; if(isFinite(hi)) p.wkHigh=hi;
+  });
+  return got;
+}
+
+function setStatus(s,t){ const d=document.getElementById("statusDot"),x=document.getElementById("statusText"); d.className="dot"+(s?" "+s:""); x.textContent=t; }
+function stamp(){ document.getElementById("updated").textContent="Updated "+new Date().toLocaleString("en-US",{hour:"2-digit",minute:"2-digit",second:"2-digit"}); }
+function setSource(txt){ document.getElementById("srcLabel").textContent="Cost basis: Jun 26, 2026 close · Source: "+txt; }
+
+let busy=false;
+async function refresh(){
+  if(busy) return; busy=true;
+  setStatus("warn","Fetching…");
+  try{
+    const got=await fetchQuotes();
+    render();
+    document.querySelectorAll('[data-px]').forEach(el=>{ el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); });
+    if(got===PORTFOLIO.length){ setStatus("live",`Live · ${got}/${PORTFOLIO.length} · Twelve Data`); setSource("Twelve Data (live)"); }
+    else if(got>0){ setStatus("warn",`Live · ${got}/${PORTFOLIO.length} quotes`); setSource("Twelve Data (partial)"); }
+    else { setStatus("bad","No quotes — check server key or symbols"); setSource("cost basis"); }
+    stamp();
+  }catch(e){
+    render();
+    if(location.protocol==="file:"){ setStatus("bad","Open the hosted https:// URL — local files block the feed"); setSource("cost basis (local file)"); }
+    else if(e&&e.kind==="rate"){ setStatus("warn","Rate-limited (8/min free) — retrying next cycle"); setSource("Twelve Data (throttled)"); }
+    else if(e&&e.kind==="api"){ setStatus("bad","Key rejected: "+e.message); setSource("cost basis (key error)"); }
+    else if(e&&e.kind==="http"){ setStatus("bad","Feed error (HTTP "+e.status+")"); setSource("cost basis"); }
+    else { setStatus("bad","Live feed blocked (network/CORS)"); setSource("cost basis (CORS)"); }
+    stamp();
+  }finally{ busy=false; }
+}
+
+document.getElementById("refreshBtn").addEventListener("click",refresh);
+
+render(); refresh(); setInterval(refresh, CONFIG.REFRESH_MS);
+</script>
+</body>
+</html>
